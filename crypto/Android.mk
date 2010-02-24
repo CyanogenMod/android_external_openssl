@@ -462,7 +462,13 @@ LOCAL_SRC_FILES+= \
 	ecdh/ech_key.c \
 	ecdh/ech_lib.c \
 	ecdh/ech_ossl.c \
-	engine/tb_ecdh.c 
+	engine/tb_ecdh.c \ 
+	evp/e_bf.c \
+	bf/bf_skey.c \
+	bf/bf_ecb.c \
+	bf/bf_enc.c \
+	bf/bf_cfb64.c \
+	bf/bf_ofb64.c
 
 LOCAL_CFLAGS += -DNO_WINDOWS_BRAINDEATH 
 
