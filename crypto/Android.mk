@@ -470,6 +470,31 @@ local_src_files := \
 	x509v3/v3_utl.c \
 	x509v3/v3err.c
 
+ifeq ($(BOARD_USE_OPENSSL_ENGINE),true)
+LOCAL_SRC_FILES += \
+       engine/eng_err.c \
+       engine/eng_lib.c \
+       engine/eng_list.c \
+       engine/eng_init.c \
+       engine/eng_ctrl.c \
+       engine/eng_table.c \
+       engine/eng_padlock.c \
+       engine/eng_pkey.c \
+       engine/eng_fat.c \
+       engine/eng_all.c \
+       engine/tb_cipher.c \
+       engine/tb_dh.c \
+       engine/tb_digest.c \
+       engine/tb_dsa.c \
+       engine/tb_ecdsa.c \
+       engine/tb_rand.c \
+       engine/tb_rsa.c \
+       engine/tb_store.c \
+       engine/eng_openssl.c \
+       engine/eng_dyn.c \
+       engine/eng_cnf.c
+endif
+
 local_c_includes := \
 	external/openssl \
 	external/openssl/crypto/asn1 \
