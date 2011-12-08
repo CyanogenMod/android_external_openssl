@@ -16,5 +16,9 @@ LOCAL_CFLAGS += -DOPENSSL_NO_STATIC_ENGINE -DOPENSSL_NO_GOST -DZLIB -DOPENSSL_NO
 # Directories
 LOCAL_CFLAGS += -DOPENSSLDIR="\"/system/lib/ssl\"" -DENGINESDIR="\"/system/lib/ssl/engines\""
 
+# OpenSSL isn't ready to be built with strict aliasing, and fixing it without
+# breaking both API and ABI is hard
+LOCAL_CFLAGS += -fno-strict-aliasing
+
 # Debug
 # LOCAL_CFLAGS += -DCIPHER_DEBUG
