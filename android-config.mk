@@ -13,5 +13,9 @@ LOCAL_CFLAGS += -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_CAPIENG -DOPENSSL_NO_CAST -DO
 # Extra
 LOCAL_CFLAGS += -DOPENSSL_NO_HW -DOPENSSL_NO_ENGINE -DZLIB
 
+# OpenSSL isn't ready to be built with strict aliasing, and fixing it without
+# breaking both API and ABI is hard
+LOCAL_CFLAGS += -fno-strict-aliasing
+
 # Debug
 # LOCAL_CFLAGS += -DCIPHER_DEBUG
