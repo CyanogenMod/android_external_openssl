@@ -23,5 +23,9 @@ LOCAL_CFLAGS += -DOPENSSLDIR="\"/system/lib/ssl\"" -DENGINESDIR="\"/system/lib/s
 # Intentionally excluded http://b/7079965
 # -DZLIB
 
+# OpenSSL isn't ready to be built with strict aliasing, and fixing it without
+# breaking both API and ABI is hard
+LOCAL_CFLAGS += -fno-strict-aliasing
+
 # Debug
 # LOCAL_CFLAGS += -DCIPHER_DEBUG
