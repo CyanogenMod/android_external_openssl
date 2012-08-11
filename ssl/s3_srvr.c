@@ -258,6 +258,7 @@ int ssl3_accept(SSL *s)
 				}
 
 			s->init_num=0;
+			s->s3->flags &= ~SSL3_FLAGS_SGC_RESTART_DONE;
 
 			if (s->state != SSL_ST_RENEGOTIATE)
 				{
@@ -800,6 +801,13 @@ int ssl3_check_client_hello(SSL *s)
 	s->s3->tmp.reuse_message = 1;
 	if (s->s3->tmp.message_type == SSL3_MT_CLIENT_HELLO)
 		{
+		/* We only allow the client to restart the handshake once per
+		 * negotiation. */
+		if (s->s3->flags & SSL3_FLAGS_SGC_RESTART_DONE)
+			{
+			SSLerr(SSL_F_SSL3_CHECK_CLIENT_HELLO, SSL_R_MULTIPLE_SGC_RESTARTS);
+			return -1;
+			}
 		/* Throw away what we have done so far in the current handshake,
 		 * which will now be aborted. (A full SSL_clear would be too much.) */
 #ifndef OPENSSL_NO_DH
@@ -816,6 +824,7 @@ int ssl3_check_client_hello(SSL *s)
 			s->s3->tmp.ecdh = NULL;
 			}
 #endif
+		s->s3->flags |= SSL3_FLAGS_SGC_RESTART_DONE;
 		return 2;
 		}
 	return 1;
@@ -2175,6 +2184,7 @@ int ssl3_get_client_key_exchange(SSL *s)
 		if (i <= 0)
 			{
 			SSLerr(SSL_F_SSL3_GET_CLIENT_KEY_EXCHANGE,ERR_R_DH_LIB);
+			BN_clear_free(pub);
 			goto err;
 			}
 
@@ -2763,7 +2773,7 @@ int ssl3_get_cert_verify(SSL *s)
 	if (s->s3->tmp.message_type != SSL3_MT_CERTIFICATE_VERIFY)
 		{
 		s->s3->tmp.reuse_message=1;
-		if ((peer != NULL) && (type | EVP_PKT_SIGN))
+		if ((peer != NULL) && (type & EVP_PKT_SIGN))
 			{
 			al=SSL_AD_UNEXPECTED_MESSAGE;
 			SSLerr(SSL_F_SSL3_GET_CERT_VERIFY,SSL_R_MISSING_VERIFY_MESSAGE);

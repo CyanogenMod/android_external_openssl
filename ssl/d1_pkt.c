@@ -179,7 +179,6 @@ static int dtls1_record_needs_buffering(SSL *s, SSL3_RECORD *rr,
 static int dtls1_buffer_record(SSL *s, record_pqueue *q,
 	unsigned char *priority);
 static int dtls1_process_record(SSL *s);
-static void dtls1_clear_timeouts(SSL *s);
 
 /* copy buffered record into SSL structure */
 static int
@@ -375,6 +374,8 @@ dtls1_process_record(SSL *s)
 	SSL3_RECORD *rr;
 	unsigned int mac_size;
 	unsigned char md[EVP_MAX_MD_SIZE];
+	int decryption_failed_or_bad_record_mac = 0;
+	unsigned char *mac = NULL;
 
 
 	rr= &(s->s3->rrec);
@@ -409,13 +410,10 @@ dtls1_process_record(SSL *s)
 	enc_err = s->method->ssl3_enc->enc(s,0);
 	if (enc_err <= 0)
 		{
-		/* decryption failed, silently discard message */
-		if (enc_err < 0)
-			{
-			rr->length = 0;
-			s->packet_length = 0;
-			}
-		goto err;
+		/* To minimize information leaked via timing, we will always
+		 * perform all computations before discarding the message.
+		 */
+		decryption_failed_or_bad_record_mac = 1;
 		}
 
 #ifdef TLS_DEBUG
@@ -445,26 +443,30 @@ printf("\n");
 			SSLerr(SSL_F_DTLS1_PROCESS_RECORD,SSL_R_PRE_MAC_LENGTH_TOO_LONG);
 			goto f_err;
 #else
-			goto err;
+			decryption_failed_or_bad_record_mac = 1;
 #endif			
 			}
 		/* check the MAC for rr->input (it's in mac_size bytes at the tail) */
-		if (rr->length < mac_size)
+		if (rr->length >= mac_size)
 			{
-#if 0 /* OK only for stream ciphers */
-			al=SSL_AD_DECODE_ERROR;
-			SSLerr(SSL_F_DTLS1_PROCESS_RECORD,SSL_R_LENGTH_TOO_SHORT);
-			goto f_err;
-#else
-			goto err;
-#endif
+			rr->length -= mac_size;
+			mac = &rr->data[rr->length];
 			}
-		rr->length-=mac_size;
+		else
+			rr->length = 0;
 		i=s->method->ssl3_enc->mac(s,md,0);
-		if (i < 0 || memcmp(md,&(rr->data[rr->length]),mac_size) != 0)
+		if (i < 0 || mac == NULL || memcmp(md, mac, mac_size) != 0)
 			{
-			goto err;
+			decryption_failed_or_bad_record_mac = 1;
 			}
+		}
+
+	if (decryption_failed_or_bad_record_mac)
+		{
+		/* decryption failed, silently discard message */
+		rr->length = 0;
+		s->packet_length = 0;
+		goto err;
 		}
 
 	/* r->length is now just compressed */
@@ -697,7 +699,6 @@ again:
 		goto again;   /* get another record */
 		}
 
-	dtls1_clear_timeouts(s);  /* done waiting */
 	return(1);
 
 	}
@@ -1167,6 +1168,9 @@ start:
 		 */
 		if (msg_hdr.type == SSL3_MT_FINISHED)
 			{
+			if (dtls1_check_timeout_num(s) < 0)
+				return -1;
+
 			dtls1_retransmit_buffered_messages(s);
 			rr->length = 0;
 			goto start;
@@ -1790,11 +1794,4 @@ dtls1_reset_seq_numbers(SSL *s, int rw)
 		}
 
 	memset(seq, 0x00, seq_bytes);
-	}
-
-
-static void
-dtls1_clear_timeouts(SSL *s)
-	{
-	memset(&(s->d1->timeout), 0x00, sizeof(struct dtls1_timeout_st));
 	}

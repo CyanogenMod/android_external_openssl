@@ -42,7 +42,11 @@ local_src_files:= \
 	ssl_algs.c \
 	bio_ssl.c \
 	ssl_err.c \
-	kssl.c
+	kssl.c \
+	d1_both.c \
+	d1_lib.c \
+	d1_enc.c \
+	d1_pkt.c
 
 #######################################
 # target static library

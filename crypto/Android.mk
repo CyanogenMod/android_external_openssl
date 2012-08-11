@@ -364,6 +364,7 @@ local_src_files := \
 	pkcs7/pk7_mime.c \
 	pkcs7/pk7_smime.c \
 	pkcs7/pkcs7err.c \
+	pqueue/pqueue.c \
 	rand/md_rand.c \
 	rand/rand_egd.c \
 	rand/rand_err.c \
