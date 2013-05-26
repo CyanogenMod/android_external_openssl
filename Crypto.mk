@@ -324,6 +324,7 @@ local_src_files := \
  crypto/evp/c_all.c \
  crypto/evp/c_allc.c \
  crypto/evp/c_alld.c \
+ crypto/evp/evp_cnf.c \
  crypto/evp/digest.c \
  crypto/evp/e_aes.c \
  crypto/evp/e_aes_cbc_hmac_sha1.c \
