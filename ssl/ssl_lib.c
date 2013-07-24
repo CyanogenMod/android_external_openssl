@@ -579,6 +579,8 @@ void SSL_free(SSL *s)
 		sk_OCSP_RESPID_pop_free(s->tlsext_ocsp_ids, OCSP_RESPID_free);
 	if (s->tlsext_ocsp_resp)
 		OPENSSL_free(s->tlsext_ocsp_resp);
+	if (s->tlsext_channel_id_private)
+		EVP_PKEY_free(s->tlsext_channel_id_private);
 #endif
 
 	if (s->client_CA != NULL)
@@ -598,8 +600,10 @@ void SSL_free(SSL *s)
 		OPENSSL_free(s->next_proto_negotiated);
 #endif
 
+#ifndef OPENSSL_NO_SRTP
         if (s->srtp_profiles)
             sk_SRTP_PROTECTION_PROFILE_free(s->srtp_profiles);
+#endif
 
 	OPENSSL_free(s);
 	}
@@ -1979,8 +1983,10 @@ void SSL_CTX_free(SSL_CTX *a)
 	a->comp_methods = NULL;
 #endif
 
+#ifndef OPENSSL_NO_SRTP
         if (a->srtp_profiles)
                 sk_SRTP_PROTECTION_PROFILE_free(a->srtp_profiles);
+#endif
 
 #ifndef OPENSSL_NO_PSK
 	if (a->psk_identity_hint)
@@ -1999,6 +2005,11 @@ void SSL_CTX_free(SSL_CTX *a)
 		ssl_buf_freelist_free(a->wbuf_freelist);
 	if (a->rbuf_freelist)
 		ssl_buf_freelist_free(a->rbuf_freelist);
+#endif
+
+#ifndef OPENSSL_NO_TLSEXT
+	if (a->tlsext_channel_id_private)
+		EVP_PKEY_free(a->tlsext_channel_id_private);
 #endif
 
 	OPENSSL_free(a);
@@ -2314,7 +2325,7 @@ int ssl_check_srvr_ecc_cert_and_alg(X509 *x, SSL *s)
 #endif
 
 /* THIS NEEDS CLEANING UP */
-X509 *ssl_get_server_send_cert(SSL *s)
+CERT_PKEY *ssl_get_server_send_pkey(const SSL *s)
 	{
 	unsigned long alg_k,alg_a;
 	CERT *c;
@@ -2369,12 +2380,20 @@ X509 *ssl_get_server_send_cert(SSL *s)
 		i=SSL_PKEY_GOST01;
 	else /* if (alg_a & SSL_aNULL) */
 		{
-		SSLerr(SSL_F_SSL_GET_SERVER_SEND_CERT,ERR_R_INTERNAL_ERROR);
+		SSLerr(SSL_F_SSL_GET_SERVER_SEND_PKEY,ERR_R_INTERNAL_ERROR);
 		return(NULL);
 		}
-	if (c->pkeys[i].x509 == NULL) return(NULL);
 
-	return(c->pkeys[i].x509);
+	return c->pkeys + i;
+	}
+
+X509 *ssl_get_server_send_cert(const SSL *s)
+	{
+	CERT_PKEY *cpk;
+	cpk = ssl_get_server_send_pkey(s);
+	if (!cpk)
+		return NULL;
+	return cpk->x509;
 	}
 
 EVP_PKEY *ssl_get_sign_pkey(SSL *s,const SSL_CIPHER *cipher, const EVP_MD **pmd)
@@ -2635,7 +2654,7 @@ static const char *ssl_get_version(int version)
 		return("TLSv1.2");
 	else if (version == TLS1_1_VERSION)
 		return("TLSv1.1");
-	if (version == TLS1_VERSION)
+	else if (version == TLS1_VERSION)
 		return("TLSv1");
 	else if (version == SSL3_VERSION)
 		return("SSLv3");
@@ -2830,7 +2849,9 @@ void ssl_clear_cipher_ctx(SSL *s)
 /* Fix this function so that it takes an optional type parameter */
 X509 *SSL_get_certificate(const SSL *s)
 	{
-	if (s->cert != NULL)
+	if (s->server)
+		return(ssl_get_server_send_cert(s));
+	else if (s->cert != NULL)
 		return(s->cert->key->x509);
 	else
 		return(NULL);

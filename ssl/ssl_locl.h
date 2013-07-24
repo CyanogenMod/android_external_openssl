@@ -215,6 +215,15 @@
 			 *((c)++)=(unsigned char)(((l)>> 8)&0xff), \
 			 *((c)++)=(unsigned char)(((l)    )&0xff))
 
+#define l2n8(l,c)	(*((c)++)=(unsigned char)(((l)>>56)&0xff), \
+			 *((c)++)=(unsigned char)(((l)>>48)&0xff), \
+			 *((c)++)=(unsigned char)(((l)>>40)&0xff), \
+			 *((c)++)=(unsigned char)(((l)>>32)&0xff), \
+			 *((c)++)=(unsigned char)(((l)>>24)&0xff), \
+			 *((c)++)=(unsigned char)(((l)>>16)&0xff), \
+			 *((c)++)=(unsigned char)(((l)>> 8)&0xff), \
+			 *((c)++)=(unsigned char)(((l)    )&0xff))
+
 #define n2l6(c,l)	(l =((BN_ULLONG)(*((c)++)))<<40, \
 			 l|=((BN_ULLONG)(*((c)++)))<<32, \
 			 l|=((BN_ULLONG)(*((c)++)))<<24, \
@@ -369,6 +378,7 @@
  * (currently this also goes into algorithm2) */
 #define TLS1_STREAM_MAC 0x04
 
+#define TLSEXT_CHANNEL_ID_SIZE 128
 
 
 /*
@@ -831,7 +841,8 @@ int ssl_verify_cert_chain(SSL *s,STACK_OF(X509) *sk);
 int ssl_undefined_function(SSL *s);
 int ssl_undefined_void_function(void);
 int ssl_undefined_const_function(const SSL *s);
-X509 *ssl_get_server_send_cert(SSL *);
+CERT_PKEY *ssl_get_server_send_pkey(const SSL *s);
+X509 *ssl_get_server_send_cert(const SSL *);
 EVP_PKEY *ssl_get_sign_pkey(SSL *s,const SSL_CIPHER *c, const EVP_MD **pmd);
 int ssl_cert_type(X509 *x,EVP_PKEY *pkey);
 void ssl_set_cert_masks(CERT *c, const SSL_CIPHER *cipher);
@@ -994,6 +1005,7 @@ int ssl3_check_cert_and_algorithm(SSL *s);
 int ssl3_check_finished(SSL *s);
 # ifndef OPENSSL_NO_NEXTPROTONEG
 int ssl3_send_next_proto(SSL *s);
+int ssl3_send_channel_id(SSL *s);
 # endif
 #endif
 
@@ -1016,6 +1028,7 @@ int ssl3_get_cert_verify(SSL *s);
 #ifndef OPENSSL_NO_NEXTPROTONEG
 int ssl3_get_next_proto(SSL *s);
 #endif
+int ssl3_get_channel_id(SSL *s);
 
 int dtls1_send_hello_request(SSL *s);
 int dtls1_send_server_hello(SSL *s);
@@ -1089,7 +1102,8 @@ int ssl_parse_clienthello_tlsext(SSL *s, unsigned char **data, unsigned char *d,
 int ssl_parse_serverhello_tlsext(SSL *s, unsigned char **data, unsigned char *d, int n, int *al);
 int ssl_prepare_clienthello_tlsext(SSL *s);
 int ssl_prepare_serverhello_tlsext(SSL *s);
-int ssl_check_clienthello_tlsext(SSL *s);
+int ssl_check_clienthello_tlsext_early(SSL *s);
+int ssl_check_clienthello_tlsext_late(SSL *s);
 int ssl_check_serverhello_tlsext(SSL *s);
 
 #ifndef OPENSSL_NO_HEARTBEATS
@@ -1112,7 +1126,9 @@ int tls12_get_sigandhash(unsigned char *p, const EVP_PKEY *pk,
 int tls12_get_sigid(const EVP_PKEY *pk);
 const EVP_MD *tls12_get_hash(unsigned char hash_alg);
 
+int tls1_channel_id_hash(EVP_MD_CTX *ctx, SSL *s);
 #endif
+
 EVP_MD_CTX* ssl_replace_hash(EVP_MD_CTX **hash,const EVP_MD *md) ;
 void ssl_clear_hash_ctx(EVP_MD_CTX **hash);
 int ssl_add_serverhello_renegotiate_ext(SSL *s, unsigned char *p, int *len,
@@ -1131,5 +1147,34 @@ int ssl_add_clienthello_use_srtp_ext(SSL *s, unsigned char *p, int *len, int max
 int ssl_parse_clienthello_use_srtp_ext(SSL *s, unsigned char *d, int len,int *al);
 int ssl_add_serverhello_use_srtp_ext(SSL *s, unsigned char *p, int *len, int maxlen);
 int ssl_parse_serverhello_use_srtp_ext(SSL *s, unsigned char *d, int len,int *al);
+
+/* s3_cbc.c */
+void ssl3_cbc_copy_mac(unsigned char* out,
+		       const SSL3_RECORD *rec,
+		       unsigned md_size,unsigned orig_len);
+int ssl3_cbc_remove_padding(const SSL* s,
+			    SSL3_RECORD *rec,
+			    unsigned block_size,
+			    unsigned mac_size);
+int tls1_cbc_remove_padding(const SSL* s,
+			    SSL3_RECORD *rec,
+			    unsigned block_size,
+			    unsigned mac_size);
+char ssl3_cbc_record_digest_supported(const EVP_MD_CTX *ctx);
+void ssl3_cbc_digest_record(
+	const EVP_MD_CTX *ctx,
+	unsigned char* md_out,
+	size_t* md_out_size,
+	const unsigned char header[13],
+	const unsigned char *data,
+	size_t data_plus_mac_size,
+	size_t data_plus_mac_plus_padding_size,
+	const unsigned char *mac_secret,
+	unsigned mac_secret_length,
+	char is_sslv3);
+
+void tls_fips_digest_extra(
+	const EVP_CIPHER_CTX *cipher_ctx, EVP_MD_CTX *mac_ctx,
+	const unsigned char *data, size_t data_len, size_t orig_len);
 
 #endif
