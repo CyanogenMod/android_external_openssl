@@ -1,6 +1,6 @@
 # Auto-generated - DO NOT EDIT!
 # To regenerate, edit openssl.config, then run:
-#     ./import_openssl.sh import /path/to/openssl-1.0.1h.tar.gz
+#     ./import_openssl.sh import /path/to/openssl-1.0.1l.tar.gz
 #
 # This script will append to the following variables:
 #
@@ -74,11 +74,15 @@ common_c_includes := \
   external/openssl/. \
   external/openssl/include \
 
+arm_clang_asflags :=
+
 arm_cflags :=
 
 arm_src_files :=
 
 arm_exclude_files :=
+
+arm64_clang_asflags :=
 
 arm64_cflags :=
 
@@ -86,11 +90,15 @@ arm64_src_files :=
 
 arm64_exclude_files :=
 
+x86_clang_asflags :=
+
 x86_cflags :=
 
 x86_src_files :=
 
 x86_exclude_files :=
+
+x86_64_clang_asflags :=
 
 x86_64_cflags :=
 
@@ -98,12 +106,36 @@ x86_64_src_files :=
 
 x86_64_exclude_files :=
 
+mips_clang_asflags :=
+
 mips_cflags :=
 
 mips_src_files :=
 
 mips_exclude_files :=
 
+mips64_clang_asflags :=
+
+mips64_cflags :=
+
+mips64_src_files :=
+
+mips64_exclude_files :=
+
+mips32r6_clang_asflags :=
+
+mips32r6_cflags :=
+
+mips32r6_src_files :=
+
+mips32r6_exclude_files :=
+
+
+ifdef ARCH_MIPS_REV6
+mips_cflags := $(mips32r6_cflags)
+mips_src_files := $(mips32r6_src_files)
+mips_exclude_files := $(mips32r6_exclude_files)
+endif
 
 LOCAL_CFLAGS += $(common_cflags)
 LOCAL_C_INCLUDES += $(common_c_includes) $(local_c_includes)

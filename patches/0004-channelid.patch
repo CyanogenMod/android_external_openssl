@@ -155,7 +155,7 @@ index 3d3fd64..7e0c4d5 100644
 @@ -3362,7 +3388,135 @@ int ssl3_send_next_proto(SSL *s)
  
  	return ssl3_do_write(s, SSL3_RT_HANDSHAKE);
- }
+         }
 -#endif  /* !OPENSSL_NO_TLSEXT && !OPENSSL_NO_NEXTPROTONEG */
 +# endif  /* !OPENSSL_NO_NEXTPROTONEG */
 +
@@ -287,8 +287,8 @@ index 3d3fd64..7e0c4d5 100644
 +	}
 +#endif  /* !OPENSSL_NO_TLSEXT */
  
- /* Check to see if handshake is full or resumed. Usually this is just a
-  * case of checking to see if a cache hit has occurred. In the case of
+ int ssl_do_client_cert_cb(SSL *s, X509 **px509, EVP_PKEY **ppkey)
+ 	{
 diff --git a/ssl/s3_lib.c b/ssl/s3_lib.c
 index 1865c70..f801923 100644
 --- a/ssl/s3_lib.c
@@ -486,7 +486,7 @@ index 323b260..6824ef6 100644
  			s->init_num=0;
  			break;
  
-@@ -771,19 +801,7 @@ int ssl3_accept(SSL *s)
+@@ -771,18 +801,7 @@ int ssl3_accept(SSL *s)
  			if (ret <= 0) goto end;
  			s->state=SSL3_ST_SW_FLUSH;
  			if (s->hit)
@@ -496,7 +496,6 @@ index 323b260..6824ef6 100644
 -#else
 -				if (s->s3->next_proto_neg_seen)
 -					{
--					s->s3->flags |= SSL3_FLAGS_CCS_OK;
 -					s->s3->tmp.next_state=SSL3_ST_SR_NEXT_PROTO_A;
 -					}
 -				else
@@ -878,7 +877,7 @@ index 944aea6..e50b8f0 100644
  #define SSL_R_NO_COMPRESSION_SPECIFIED			 187
  #define SSL_R_NO_GOST_CERTIFICATE_SENT_BY_PEER		 330
  #define SSL_R_NO_METHOD_SPECIFIED			 188
-+#define SSL_R_NO_P256_SUPPORT				 373
++#define SSL_R_NO_P256_SUPPORT				 380
  #define SSL_R_NO_PRIVATEKEY				 189
  #define SSL_R_NO_PRIVATE_KEY_ASSIGNED			 190
  #define SSL_R_NO_PROTOCOLS_AVAILABLE			 191
@@ -1331,7 +1330,7 @@ index bddffd9..1a56a97 100644
 +		s2n(0,ret);
 +		}
 +
- 	if ((extdatalen = ret-p-2)== 0) 
+ 	if ((extdatalen = ret-orig-2)== 0) 
  		return p;
  
 @@ -1442,6 +1468,16 @@ int ssl_parse_clienthello_tlsext(SSL *s, unsigned char **p, unsigned char *d, in
