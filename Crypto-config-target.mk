@@ -1,6 +1,6 @@
 # Auto-generated - DO NOT EDIT!
 # To regenerate, edit openssl.config, then run:
-#     ./import_openssl.sh import /path/to/openssl-1.0.1h.tar.gz
+#     ./import_openssl.sh import /path/to/openssl-1.0.1j.tar.gz
 #
 # This script will append to the following variables:
 #
@@ -184,6 +184,7 @@ common_src_files := \
   crypto/conf/conf_mall.c \
   crypto/conf/conf_mod.c \
   crypto/conf/conf_sap.c \
+  crypto/constant_time_locl.h \
   crypto/cpt_err.c \
   crypto/cryptlib.c \
   crypto/cversion.c \
@@ -695,6 +696,9 @@ mips_exclude_files := \
   crypto/aes/aes_core.c \
   crypto/bn/bn_asm.c \
 
+
+# "Temporary" hack until this can be fixed in openssl.config
+x86_64_cflags += -DRC4_INT="unsigned int"
 
 LOCAL_CFLAGS += $(common_cflags)
 LOCAL_C_INCLUDES += $(common_c_includes)
