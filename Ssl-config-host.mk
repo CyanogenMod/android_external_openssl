@@ -108,6 +108,8 @@ LOCAL_SRC_FILES_x86 += $(filter-out $(x86_exclude_files), $(common_src_files) $(
 LOCAL_CFLAGS_x86_64 += $(x86_64_cflags)
 LOCAL_SRC_FILES_x86_64 += $(filter-out $(x86_64_exclude_files), $(common_src_files) $(x86_64_src_files))
 else
+ifneq ($(HOST_OS),darwin)
 $(warning Unknown host OS $(HOST_OS))
+endif
 LOCAL_SRC_FILES += $(common_src_files)
 endif
