@@ -16,7 +16,7 @@ The following steps are recommended for porting new OpenSSL versions.
 
      gpg openssl-*.tar.gz.asc
 
-   If the public key is not found, import the the one with the
+   If the public key is not found, import the one with the
    matching RSA key ID from http://www.openssl.org/about/, using:
 
      gpg --import # paste PGP public key block on stdin
